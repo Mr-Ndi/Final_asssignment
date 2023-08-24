@@ -58,7 +58,7 @@ class Book{
 
         // Overload the << operator to display book information
         friend ostream& operator<<(ostream& os, const Book& book) {
-        os << "Title: " << book.Title << "\nAuthor: " << book.Author << "\nISBN: " << book.ISBN << endl;
+        os << "\n\nTitle: " << book.Title << "\nAuthor: " << book.Author << "\nISBN: " << book.ISBN << endl;
         return os;
         }
 };
@@ -68,13 +68,24 @@ class Book{
             string uname;
             string cnumber;
             int owfees;
+            
            
         public:
             //getter functions
             const string user_name()const {return uname;}
             const string card_number()const {return cnumber;}
             const int owned_fees()const {return owfees;}
+            
+            //overloading == operator in patron 
+            bool operator==(const patron& other) const {
+            return uname == other.uname && cnumber == other.cnumber;
+            }
 
+            // Overload the << operator to display patron information
+            friend ostream& operator<<(ostream& os, const patron& pt) {
+            os << "\n\nUser Name: " << pt.uname << "\nCard Number: " << pt.cnumber << "\nOwed Fees: " << pt.owfees << endl;
+            return os;
+            }
             //parameterised constructor
             patron(string un, string cn, int owf)
             : uname(un), cnumber(cn), owfees(owf){}
@@ -90,15 +101,15 @@ class Book{
         private:
         Book *book;
         patron *pat;
-        enum Activity {CHECH_OUT, CHECK_IN};
-
+        
         // Book Book; instances
         // patron Patron; instances
 
-        
-        Activity activity;
-        string date;
         public:
+        string date;
+        enum Activity {CHECH_OUT, CHECK_IN};
+        Activity activity;
+
         // Constructor
         transaction(Book *b, patron* p, Activity act, const string& dt)
          : book(b), pat(p), activity(act), date(dt) {}
@@ -112,46 +123,103 @@ class Book{
     class Library{
         private:
             vector<Book> books;
-            vector<patron>patrona;
-            vector<transaction>transactions;
+            vector<patron> patrons;
+            vector<transaction> transactions;
         public:
         // adding book to alibrary
         void adding(const Book& newbook){books.push_back(newbook);}
+        // Add a patron to the library
+        void addPatron(const patron& newPatron) { patrons.push_back(newPatron);}
         
-         void checkOutBook(const Book& book, const patron& patron, const string& date) {
-             // Check if the book and patron are in the library
+        // Return a vector of patrons who owe fees
+        vector<patron> getPatronsWithFees() {
+        vector<patron> patronsWithFees;
+            for (const patron& pt : patrons) {
+                if (pt.oweesfees()) {
+                    patronsWithFees.push_back(pt);
+                }
+        }
+        return patronsWithFees;
+        }
 
-            bool bookInLibrary = false;
-            bool patronInLibrary = false;
+        // Record a transaction
+        void recordTransaction(const transaction& trans) {
+        transactions.push_back(trans);
+    }
+    void checkOutBook(Book& book, patron& patrones, string& date) {
+    
+        // Check if the book and patron are in the library
 
-             for (const Book& b : books) {
-            if (b == book) {
-                bookInLibrary = true;
-                break;
-            }
+    bool bookInLibrary = false;
+    bool patronInLibrary = false;
+
+    for (const Book& b : books) {
+        if (b == book) {
+            bookInLibrary = true;
+            break;
         }
-        for (const patron& p : patrona) {
-            if (p == patron) {
-                patronInLibrary = true;
-                break;
-            }
+    }
+    for (const patron& pt : patrons) {
+        if (pt == patrones) {
+            patronInLibrary = true;
+            break;
         }
-        if (!bookInLibrary || !patronInLibrary) {
-            cout << "Error: Book or patron not found in the library." << endl;
-            return;
-        }
-        }
+    }
+    if (!bookInLibrary || !patronInLibrary) {
+        cout << "Error: Book or patron not found in the library." << endl;
+        return;
+    }
+    if (patrones.oweesfees()) {
+        cout << "Error: Patron owes fees and cannot check out a book." << endl;
+        return;
+    }
+
+    // Create a transaction and add it to the transactions vector
+    transaction trans(const_cast<Book*>(&book), const_cast<patron*>(&patrones), transaction::CHECH_OUT, date);
+    transactions.push_back(trans);
+
+    book.chechout();
+
+    cout << "Book checked out successfully." << endl;
+}
+
     };
 
     
-int main()
-{
-    //create library function and test their functionality
-    Book book_1("1234", "Advanced prog in cpp", "Mr Theonest",01052023, "nonfiction", false);
-    //Book book_2;
-    //copy constructor
-    
-    Book book_3 = book_1;
-    
-    return (0);
+int main() {
+    // Create a library
+    Library library;
+
+    // Create some books
+    Book book1("1234", "Advanced programming in cpp", "Mr Theonest", 1052023, "nonfiction", false);
+    Book book2("5678", "Introduction to Algorithms", "Mr Iddi Kajeguhakwa", 20211201, "nonfiction", false);
+
+    // Create some patrons
+    patron patron1("Joseph Muneza", "222015797", 80);//u can modfy the 3rd parameter to see the change in output
+    patron patron2("Kelvin prince", "222006232", 0);//u can modfy the 3rd parameter to see the change in output
+
+    // Add books to the library
+    library.adding(book1);
+    library.adding(book2);
+
+    // Add patrons to the library
+    library.addPatron(patron1);
+    library.addPatron(patron2);
+
+    // Check out a book
+    string checkoutDate = "2023-08-24";
+    library.checkOutBook(book1, patron1, checkoutDate);
+
+    // Print book and patron information
+    cout<< book1 << endl;
+    cout<< patron1 << endl;
+
+    // Print patrons who owe fees
+    vector<patron> patronsWithFees = library.getPatronsWithFees();
+    cout << "Patrons who owe fees:" << endl;
+    for (const patron& pt : patronsWithFees) {
+        cout << pt.user_name() << endl;
+    }
+
+    return 0;
 }
